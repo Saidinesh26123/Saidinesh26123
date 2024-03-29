@@ -1,0 +1,97 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+
+let tasks = [];
+
+// Get all tasks
+app.get('/tasks', (req, res) => {
+    res.json(tasks);
+});
+
+// Add a new task
+app.post('/tasks', (req, res) => {
+    const newTask = req.body;
+    tasks.push(newTask);
+    res.status(201).send();
+});
+
+// Delete a task
+app.delete('/tasks/:id', (req, res) => {
+    const taskId = req.params.id;
+    tasks = tasks.filter(task => task.id !== taskId);
+    res.status(200).send();
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List App</title>
+    <style>
+        /* CSS styles */
+    </style>
+</head>
+<body>
+    <h1>Todo List</h1>
+    <input type="text" id="taskInput" placeholder="Add new task">
+    <button onclick="addTask()">Add Task</button>
+    <ul id="taskList"></ul>
+
+    <script>
+        // JavaScript
+        const taskList = document.getElementById('taskList');
+
+        function fetchTasks() {
+            fetch('http://localhost:3000/tasks')
+            .then(response => response.json())
+            .then(data => {
+                taskList.innerHTML = '';
+                data.forEach(task => {
+                    const li = document.createElement('li');
+                    li.textContent = task.description;
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Delete';
+                    deleteButton.onclick = () => deleteTask(task.id);
+                    li.appendChild(deleteButton);
+                    taskList.appendChild(li);
+                });
+            });
+        }
+
+        function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const description = taskInput.value.trim();
+            if (description !== '') {
+                const newTask = { id: Date.now().toString(), description };
+                fetch('http://localhost:3000/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTask)
+                })
+                .then(fetchTasks);
+                taskInput.value = '';
+            }
+        }
+
+        function deleteTask(id) {
+            fetch(`http://localhost:3000/tasks/${id}`, {
+                method: 'DELETE'
+            })
+            .then(fetchTasks);
+        }
+
+        fetchTasks();
+    </script>
+</body>
+</html>
